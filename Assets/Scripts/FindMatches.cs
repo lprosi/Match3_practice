@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class FindMatches : MonoBehaviour
 {
@@ -37,6 +38,26 @@ public class FindMatches : MonoBehaviour
                         {
                             if(leftDot.tag == currentDot.tag && rightDot.tag == currentDot.tag)
                             {
+                                if(currentDot.GetComponent<Dot>().isRowBomb || leftDot.GetComponent<Dot>().isRowBomb || rightDot.GetComponent<Dot>().isRowBomb)
+                                {
+                                    currentMatches.Union(GetRowPieces(j));
+                                }
+
+                                if (currentDot.GetComponent<Dot>().isColumnBomb)
+                                {
+                                    currentMatches.Union(GetColumnPieces(i));
+                                }
+
+                                if (leftDot.GetComponent<Dot>().isColumnBomb)
+                                {
+                                    currentMatches.Union(GetColumnPieces(i - 1));
+                                }
+
+                                if (rightDot.GetComponent<Dot>().isColumnBomb)
+                                {
+                                    currentMatches.Union(GetColumnPieces(i + 1));
+                                }
+
                                 if (!currentMatches.Contains(leftDot))
                                 {
                                     currentMatches.Add(leftDot);
@@ -64,6 +85,26 @@ public class FindMatches : MonoBehaviour
                         {
                             if (upDot.tag == currentDot.tag && downDot.tag == currentDot.tag)
                             {
+                                if (currentDot.GetComponent<Dot>().isColumnBomb || upDot.GetComponent<Dot>().isColumnBomb || downDot.GetComponent<Dot>().isColumnBomb)
+                                {
+                                    currentMatches.Union(GetColumnPieces(i));
+                                }
+
+                                if (currentDot.GetComponent<Dot>().isRowBomb)
+                                {
+                                    currentMatches.Union(GetRowPieces(j));
+                                }
+
+                                if (upDot.GetComponent<Dot>().isRowBomb)
+                                {
+                                    currentMatches.Union(GetRowPieces(j + 1));
+                                }
+
+                                if (downDot.GetComponent<Dot>().isRowBomb)
+                                {
+                                    currentMatches.Union(GetRowPieces(j - 1));
+                                }
+
                                 if (!currentMatches.Contains(upDot))
                                 {
                                     currentMatches.Add(upDot);
@@ -81,6 +122,83 @@ public class FindMatches : MonoBehaviour
                                 currentDot.GetComponent<Dot>().isMatched = true;
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    List<GameObject> GetColumnPieces(int column)
+    {
+        List<GameObject> dots = new List<GameObject>();
+        for (int i = 0;i < board.height; i++)
+        {
+            if (board.allDots[column,i] != null)
+            {
+                dots.Add(board.allDots[column,i]);
+                board.allDots[column, i].GetComponent<Dot>().isMatched = true;
+            }
+        }
+        return dots;
+    }
+
+    List<GameObject> GetRowPieces(int row)
+    {
+        List<GameObject> dots = new List<GameObject>();
+        for (int i = 0; i < board.width; i++)
+        {
+            if (board.allDots[i, row] != null)
+            {
+                dots.Add(board.allDots[i, row]);
+                board.allDots[i, row].GetComponent<Dot>().isMatched = true;
+            }
+        }
+        return dots;
+    }
+
+    public void CheckBombs()
+    {
+        //переместил ли игрок что-то?
+        if(board.currentDot != null)
+        {
+            //совпадает ли точка, которую передвинули?
+            if (board.currentDot.isMatched)
+            {
+                //сделать несовпадающим
+                board.currentDot.isMatched = false;
+                //какой тип бомбы(powerup) сделать
+                int typeOfBomb = Random.Range(0, 100);
+                if(typeOfBomb < 50)
+                {
+                    //создать рядовую бомбу
+                    board.currentDot.MakeRowBomb();
+                }
+                else if(typeOfBomb >= 50)
+                {
+                    //создать столбчатую бомбу
+                    board.currentDot.MakeColumnBomb();
+                }
+            }
+            //совпадает ли другая точка? 
+            else if (board.currentDot.otherDot != null)
+            {
+                //совпадает ли другая точка?
+                Dot otherDot = board.currentDot.otherDot.GetComponent<Dot>();
+                if (otherDot.isMatched)
+                {
+                    //сделать несовпадающей
+                    otherDot.isMatched = false;
+                    //какой тип бомбы(powerup) сделать
+                    int typeOfBomb = Random.Range(0, 100);
+                    if (typeOfBomb < 50)
+                    {
+                        //создать рядовую бомбу
+                        otherDot.MakeRowBomb();
+                    }
+                    else if (typeOfBomb >= 50)
+                    {
+                        //создать столбчатую бомбу
+                        otherDot.MakeColumnBomb();
                     }
                 }
             }
