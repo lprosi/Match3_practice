@@ -103,6 +103,7 @@ public class Board : MonoBehaviour
                         Debug.Log(maxIterations);
                     }
                     maxIterations = 0;
+
                     GameObject dot = Instantiate(dots[dotToUse], tempPosition, Quaternion.identity);
                     dot.GetComponent<Dot>().row = j;
                     dot.GetComponent<Dot>().column = i;
@@ -414,6 +415,7 @@ public class Board : MonoBehaviour
         yield return new WaitForSeconds(.5f);
         if (IsDeadlocked())
         {
+            ShuffleBoard();
             Debug.Log("Тупик");
         }
 
@@ -470,7 +472,7 @@ public class Board : MonoBehaviour
         return false;
     }
 
-    private bool SwitchAndCheck(int column, int row, Vector2 direction)
+    public bool SwitchAndCheck(int column, int row, Vector2 direction)
     {
         SwitchPieces(column, row, direction);
         if (CheckForMatches())
@@ -510,5 +512,59 @@ public class Board : MonoBehaviour
         }
         return true;
     }
+
+    private void ShuffleBoard()
+    {
+        //создание списка игровых объектов
+        List<GameObject> newBoard = new List<GameObject>();
+        //добавить каждый элемент в этот список
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if (allDots[i,j] != null)
+                {
+                    newBoard.Add(allDots[i,j]);
+                }
+            }
+        }
+        //для каждого элемента на доске
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                //если это место не типа blank
+                if (!blankSpaces[i, j])
+                {
+                    //выбрать случайное число
+                    int pieceToUse = Random.Range(0, newBoard.Count);
+                    int maxIterations = 0;
+                    while (MatchesAt(i, j, newBoard[pieceToUse]) && maxIterations < 100)
+                    {
+                        pieceToUse = Random.Range(0, newBoard.Count);
+                        maxIterations++;
+                        Debug.Log(maxIterations);
+                    }
+                    //создание контейнера для точки
+                    Dot piece = newBoard[pieceToUse].GetComponent<Dot>();
+                    maxIterations = 0;
+                    //назначение столбца и строки точки
+                    piece.column = i;
+                    piece.row = j;
+                    //заполнение массива точек новой точкой
+                    allDots[i,j] = newBoard[pieceToUse];
+                    //удаление из листа
+                    newBoard.Remove(newBoard[pieceToUse]);
+                }
+            }
+        }
+        //проверить нет ли тупика
+        if (IsDeadlocked())
+        {
+            ShuffleBoard();
+        }
+    }
+
+
 
 }
