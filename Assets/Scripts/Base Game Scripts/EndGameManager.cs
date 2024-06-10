@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.UI;
 public enum GameType
@@ -18,6 +19,8 @@ public class EndGameRequirements
 
 public class EndGameManager : MonoBehaviour
 {
+
+
     public GameObject movesLabel;
     public GameObject timeLabel;
     public GameObject youWinPanel;
@@ -32,9 +35,23 @@ public class EndGameManager : MonoBehaviour
     void Start()
     {
         board = FindObjectOfType<Board>();
+        SetGameType();
         SetupGame();
     }
 
+    void SetGameType()
+    {
+        if(board.world != null)
+        {
+            if (board.level < board.world.levels.Length)
+            {
+                if (board.world.levels[board.level] != null)
+                {
+                    requirements = board.world.levels[board.level].endGameRequirements;
+                }
+            }
+        }
+    }
 
     void SetupGame()
     {

@@ -29,15 +29,23 @@ public class TileType
 public class Board : MonoBehaviour
 {
 
+    [Header("Переменные, связанные со скриптовыми объектами")]
+    public World world;
+    public int level;
 
     public GameState currentState = GameState.move;
+    [Header("Размер игровой доски")]
     public int width;
     public int height;
     public int offSet;
+
+    [Header("Префабы")]
     public GameObject tilePrefab;
     public GameObject breakableTilePrefab;
     public GameObject[] dots;
     public GameObject destroyEffect;
+
+    [Header("Макет")]
     public TileType[] boardLayout;
     private bool[,] blankSpaces;
     private BackgroundTile[,] breakableTiles;
@@ -51,7 +59,32 @@ public class Board : MonoBehaviour
     private GoalManager goalManager;
     public float refillDelay = 0.5f;
     public int[] scoreGoals;
-         
+
+
+
+    private void Awake()
+    {
+        if(PlayerPrefs.HasKey("Current Level"))
+        {
+            level = PlayerPrefs.GetInt("Current Level");
+        }
+        if(world != null)
+        {
+            if (level < world.levels.Length)
+            {
+                if (world.levels[level] != null)
+                {
+                    width = world.levels[level].width;
+                    height = world.levels[level].height;
+                    dots = world.levels[level].dots;
+                    scoreGoals = world.levels[level].scoreGoals;
+                    boardLayout = world.levels[level].boardLayout;
+                }
+            }
+        }
+    }
+
+
     // Start is called before the first frame update
     void Start()
     {
