@@ -9,10 +9,24 @@ public class SoundManager : MonoBehaviour
 
     public void PlayRandomDestroySound()
     {
-        //выбрать случайное число
-        int clipToPlay = Random.Range(0, destroySound.Length);
-        //включить звук
-        destroySound[clipToPlay].Play();
+        if (PlayerPrefs.HasKey("Sound"))
+        {
+            if(PlayerPrefs.GetInt("Sound") == 1)
+            {
+                //выбрать случайное число
+                int clipToPlay = Random.Range(0, destroySound.Length);
+                //включить звук
+                destroySound[clipToPlay].Play();
+            }
+        }
+        else
+        {
+            //выбрать случайное число
+            int clipToPlay = Random.Range(0, destroySound.Length);
+            //включить звук
+            destroySound[clipToPlay].Play();
+        }
+
     }
 
 }
