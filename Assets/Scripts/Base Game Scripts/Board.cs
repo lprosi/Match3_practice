@@ -16,6 +16,9 @@ public enum TileKind
 {
     Breakable,
     Blank,
+    Lock,
+    Concrete,
+    Slime,
     Normal
 }
 
@@ -50,6 +53,8 @@ public class Board : MonoBehaviour
     [Header("Префабы")]
     public GameObject tilePrefab;
     public GameObject breakableTilePrefab;
+    public GameObject lockTilePrefab;
+    public GameObject concreteTilePrefab;
     public GameObject[] dots;
     public GameObject destroyEffect;
 
@@ -57,6 +62,8 @@ public class Board : MonoBehaviour
     public TileType[] boardLayout;
     private bool[,] blankSpaces;
     private BackgroundTile[,] breakableTiles;
+    public BackgroundTile[,] lockTiles;
+    private BackgroundTile[,] concreteTiles;
     public GameObject[,] allDots;
 
     [Header("Переменные, связанные с совпадением")]
@@ -103,6 +110,8 @@ public class Board : MonoBehaviour
         soundManager = FindObjectOfType<SoundManager>();
         scoreManager = FindObjectOfType<ScoreManager>();
         breakableTiles = new BackgroundTile[width, height];
+        lockTiles = new BackgroundTile[width, height];
+        concreteTiles = new BackgroundTile[width, height];
         findMatches = FindObjectOfType<FindMatches>();
         blankSpaces = new bool[width, height];
         allDots = new GameObject[width, height];
@@ -123,7 +132,7 @@ public class Board : MonoBehaviour
 
     public void GenerateBreakableTiles()
     {
-        //посмотреть все плитики
+        //посмотреть все плитки
         for (int i = 0; i < boardLayout.Length; i++)
         {
             //если плитка типа breakable
@@ -137,15 +146,49 @@ public class Board : MonoBehaviour
         }
     }
 
+    private void GenerateLockTiles()
+    {
+        //посмотреть все плитики
+        for (int i = 0; i < boardLayout.Length; i++)
+        {
+            //если плитка типа lock
+            if (boardLayout[i].tileKind == TileKind.Lock)
+            {
+                //создать данную плитку в текущей позиции
+                Vector2 tempPosition = new Vector2(boardLayout[i].x, boardLayout[i].y);
+                GameObject tile = Instantiate(lockTilePrefab, tempPosition, Quaternion.identity);
+                lockTiles[boardLayout[i].x, boardLayout[i].y] = tile.GetComponent<BackgroundTile>();
+            }
+        }
+    }
+
+    private void GenerateConcreteTiles()
+    {
+        //посмотреть все плитики
+        for (int i = 0; i < boardLayout.Length; i++)
+        {
+            //если плитка типа lock
+            if (boardLayout[i].tileKind == TileKind.Concrete)
+            {
+                //создать данную плитку в текущей позиции
+                Vector2 tempPosition = new Vector2(boardLayout[i].x, boardLayout[i].y);
+                GameObject tile = Instantiate(concreteTilePrefab, tempPosition, Quaternion.identity);
+                concreteTiles[boardLayout[i].x, boardLayout[i].y] = tile.GetComponent<BackgroundTile>();
+            }
+        }
+    }
+
     private void SetUp()
     {
         GenerateBlankSpaces();
         GenerateBreakableTiles();
+        GenerateLockTiles();
+        GenerateConcreteTiles();
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
             {
-                if (!blankSpaces[i, j])
+                if (!blankSpaces[i, j] && !concreteTiles[i,j])
                 {
                     Vector2 tempPosition = new Vector2(i, j + offSet);
                     Vector2 tilePosition = new Vector2(i, j);
@@ -350,6 +393,41 @@ public class Board : MonoBehaviour
         
     }
 
+
+    public void BombRow(int row)
+    {
+        for (int i = 0; i < width; i++)
+        {
+
+                if (concreteTiles[i, row])
+                {
+                    concreteTiles[i, row].TakeDamage(1);
+                    if (concreteTiles[i,row].hitPoints <= 0)
+                    {
+                        concreteTiles[i, row] = null;
+                    }
+                }
+            
+        }
+    }
+
+    public void BombColumn(int column)
+    {
+        
+            for (int j = 0; j < height; j++)
+            {
+                if (concreteTiles[column, j])
+                {
+                    concreteTiles[column, j].TakeDamage(1);
+                    if (concreteTiles[column, j].hitPoints <= 0)
+                    {
+                        concreteTiles[column, j] = null;
+                    }
+                }
+            }
+        
+    }
+
     private void DestroyMatchesAt(int column, int row)
     {
         if (allDots[column, row].GetComponent<Dot>().isMatched)
@@ -367,7 +445,17 @@ public class Board : MonoBehaviour
                 }
             }
 
-            if(goalManager != null)
+            if (lockTiles[column, row] != null)
+            {
+                //если это так, то нанесется урон
+                lockTiles[column, row].TakeDamage(1);
+                if (lockTiles[column, row].hitPoints <= 0)
+                {
+                    lockTiles[column, row] = null;
+                }
+            }
+            DamageConcrete(column, row);
+            if (goalManager != null)
             {
                 goalManager.CompareGoals(allDots[column, row].tag.ToString());
                 goalManager.UpdateGoals();
@@ -408,6 +496,54 @@ public class Board : MonoBehaviour
         StartCoroutine(DecreaseRowCo2());
     }
 
+    private void DamageConcrete(int column,  int row)
+    {
+        if(column > 0)
+        {
+            if (concreteTiles[column - 1, row])
+            {
+                concreteTiles[column - 1, row].TakeDamage(1);
+                if (concreteTiles[column - 1, row].hitPoints <= 0)
+                {
+                    concreteTiles[column - 1, row] = null;
+                }
+            }
+        }
+        if (column < width - 1)
+        {
+            if (concreteTiles[column + 1, row])
+            {
+                concreteTiles[column + 1, row].TakeDamage(1);
+                if (concreteTiles[column + 1, row].hitPoints <= 0)
+                {
+                    concreteTiles[column + 1, row] = null;
+                }
+            }
+        }
+        if (row > 0)
+        {
+            if (concreteTiles[column, row - 1])
+            {
+                concreteTiles[column, row - 1].TakeDamage(1);
+                if (concreteTiles[column, row - 1].hitPoints <= 0)
+                {
+                    concreteTiles[column, row - 1] = null;
+                }
+            }
+        }
+        if (row < height - 1)
+        {
+            if (concreteTiles[column, row + 1])
+            {
+                concreteTiles[column, row + 1].TakeDamage(1);
+                if (concreteTiles[column, row + 1].hitPoints <= 0)
+                {
+                    concreteTiles[column, row + 1] = null;
+                }
+            }
+        }
+    }
+
     private IEnumerator DecreaseRowCo2()
     {
         for (int i = 0; i < width; i++)
@@ -415,7 +551,7 @@ public class Board : MonoBehaviour
             for (int j = 0; j < height; j++)
             {
                 //если текущее место не типа blank и пустое
-                if (!blankSpaces[i,j] && allDots[i,j] == null)
+                if (!blankSpaces[i,j] && allDots[i,j] == null && !concreteTiles[i,j])
                 {
                     //сделать цикл от этого места до начала столбца
                     for(int k = j + 1; k < height; k++)
@@ -471,7 +607,7 @@ public class Board : MonoBehaviour
         {
             for(int j = 0; j < height; j++)
             {
-                if (allDots[i,j] == null && !blankSpaces[i,j])
+                if (allDots[i,j] == null && !blankSpaces[i,j] && !concreteTiles[i,j])
                 {
                     Vector2 tempPosition = new Vector2(i, j + offSet);
                     int dotToUse = Random.Range(0, dots.Length);
@@ -541,12 +677,15 @@ public class Board : MonoBehaviour
 
     private void SwitchPieces(int column, int row, Vector2 direction)
     {
-        //взять вторую точку и сохранить ее в держателе
-        GameObject holder = allDots[column + (int)direction.x, row + (int)direction.y] as GameObject;
-        //изменение первой точки на вторую позицию
-        allDots[column + (int)direction.x, row + (int)direction.y] = allDots[column, row];
-        //установление первой точки на вторую позицию
-        allDots[column, row] = holder;
+        if (allDots[column + (int)direction.x, row + (int)direction.y] != null)
+        {
+            //взять вторую точку и сохранить ее в держателе
+            GameObject holder = allDots[column + (int)direction.x, row + (int)direction.y] as GameObject;
+            //изменение первой точки на вторую позицию
+            allDots[column + (int)direction.x, row + (int)direction.y] = allDots[column, row];
+            //установление первой точки на вторую позицию
+            allDots[column, row] = holder;
+        }
     }
 
     private bool CheckForMatches()
@@ -651,7 +790,7 @@ public class Board : MonoBehaviour
             for (int j = 0; j < height; j++)
             {
                 //если это место не типа blank
-                if (!blankSpaces[i, j])
+                if (!blankSpaces[i, j] && !concreteTiles[i,j])
                 {
                     //выбрать случайное число
                     int pieceToUse = Random.Range(0, newBoard.Count);
