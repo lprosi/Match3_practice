@@ -33,11 +33,12 @@ public class GameData : MonoBehaviour
         {
             Destroy(this.gameObject);
         }
+        Load();
     }
 
     private void Start()
     {
-        Load();
+
     }
     public void Save()
     {
@@ -70,9 +71,20 @@ public class GameData : MonoBehaviour
             file.Close();
             Debug.Log("Загружено");
         }
+        else
+        {
+            saveData = new SaveData();
+            saveData.isActive = new bool[100];
+            saveData.stars = new int[100];
+            saveData.highScores = new int[100];
+            saveData.isActive[0] = true;
+        }
     }
 
-
+    private void OnApplicationQuit()
+    {
+        Save();
+    }
     private void OnDisable()
     {
         Save();

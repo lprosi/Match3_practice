@@ -18,6 +18,7 @@ public class FindMatches : MonoBehaviour
     public void FindAllMatches()
     {
         StartCoroutine(FindAllMatchesCo());
+
     }
 
     private List<GameObject> IsAdjacentBomb(Dot dot1, Dot dot2, Dot dot3)
@@ -98,7 +99,8 @@ public class FindMatches : MonoBehaviour
 
     private IEnumerator FindAllMatchesCo()
     {
-        yield return new WaitForSeconds(.2f);
+        //yield return new WaitForSeconds(.2f);
+        yield return null;
         for (int i = 0; i < board.width; i++)
         {
             for (int j = 0; j < board.height; j++)
@@ -240,13 +242,13 @@ public class FindMatches : MonoBehaviour
         return dots;
     }
 
-    public void CheckBombs()
+    public void CheckBombs(MatchType matchType)
     {
         //переместил ли игрок что-то?
         if(board.currentDot != null)
         {
             //совпадает ли точка, которую передвинули?
-            if (board.currentDot.isMatched)
+            if (board.currentDot.isMatched && board.currentDot.tag == matchType.color)
             {
                 //сделать несовпадающим
                 board.currentDot.isMatched = false;
@@ -278,7 +280,7 @@ public class FindMatches : MonoBehaviour
             {
                 //совпадает ли другая точка?
                 Dot otherDot = board.currentDot.otherDot.GetComponent<Dot>();
-                if (otherDot.isMatched)
+                if (otherDot.isMatched && otherDot.tag == matchType.color)
                 {
                     //сделать несовпадающей
                     otherDot.isMatched = false;

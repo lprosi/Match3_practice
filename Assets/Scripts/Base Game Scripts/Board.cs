@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using UnityEngine;
 
 public enum GameState
@@ -16,6 +17,13 @@ public enum TileKind
     Breakable,
     Blank,
     Normal
+}
+
+[System.Serializable]
+public class MatchType
+{
+    public int type;
+    public string color;
 }
 
 [System.Serializable]
@@ -50,6 +58,9 @@ public class Board : MonoBehaviour
     private bool[,] blankSpaces;
     private BackgroundTile[,] breakableTiles;
     public GameObject[,] allDots;
+
+    [Header("Переменные, связанные с совпадением")]
+    public MatchType matchType;
     public Dot currentDot;
     private FindMatches findMatches;
     public int basePieceValue = 20;
@@ -210,113 +221,140 @@ public class Board : MonoBehaviour
         return false;
     }
 
-    private bool ColumnOrRow()
+    private MatchType ColumnOrRow()
     {
-        int numberHorizontal = 0;
-        int numberVertical = 0;
-        Dot firstPiece = findMatches.currentMatches[0].GetComponent<Dot>();
-        if (firstPiece != null)
+        List<GameObject> matchCopy = findMatches.currentMatches as List<GameObject>;
+
+        matchType.type = 0;
+        matchType.color = "";
+        //просмотреть совпадения и решить нужно ли создавать бомбу
+        for (int i = 0; i < matchCopy.Count; i++ )
         {
-            foreach (GameObject currentPiece in findMatches.currentMatches)
+            //сохранить текущую точку
+            Dot thisDot = matchCopy[i].GetComponent<Dot>();
+            string color = matchCopy[i].tag;
+            int column = thisDot.column;
+            int row = thisDot.row;
+            int columnMatch = 0;
+            int rowMatch = 0;
+            for (int j = 0; j < matchCopy.Count; j++)
             {
-                Dot dot = currentPiece.GetComponent<Dot>();
-                if (dot.row == firstPiece.row)
+                //сохранить следующую точку
+                Dot nextDot = matchCopy[j].GetComponent<Dot>();
+                if(nextDot == thisDot)
                 {
-                    numberHorizontal++;
+                    continue;
                 }
-                if (dot.column == firstPiece.column)
+                if(nextDot.column == thisDot.column && nextDot.tag == color)
                 {
-                    numberVertical++;
+                    columnMatch++;
+                }
+                if (nextDot.row == thisDot.row && nextDot.tag == color)
+                {
+                    rowMatch++;
                 }
             }
+            //вернуть тройку если совпадение строчной или столбцовой бомбы
+            //вернуть двойку если бомба, которая уничтожает соседние
+            //вернуть единицу, если цветная бомба
+            if(columnMatch == 4 || rowMatch == 4)
+            {
+                matchType.type = 1;
+                matchType.color = color;
+                return matchType;
+            }
+            else if(columnMatch == 2 && rowMatch == 2)
+            {
+                matchType.type = 2;
+                matchType.color = color;
+                return matchType;
+            }
+            else if(columnMatch == 3 || rowMatch == 3)
+            {
+                matchType.type = 3;
+                matchType.color = color;
+                return matchType;
+            }
         }
-        return (numberVertical == 5 || numberHorizontal == 5);
+        matchType.type = 0;
+        matchType.color = "";
+        return matchType;
+
     }
 
     private void CheckToMakeBombs()
     {
-        if (findMatches.currentMatches.Count == 4 || findMatches.currentMatches.Count == 7)
+        if (findMatches.currentMatches.Count > 3)
         {
-            findMatches.CheckBombs();
-        }
-        if (findMatches.currentMatches.Count == 5 || findMatches.currentMatches.Count == 8)
-        {
-            if (ColumnOrRow())
+            MatchType typeOfMatch = ColumnOrRow();
+            if (typeOfMatch.type == 1)
             {
                 //создать цветную бомбу
                 //Debug.Log("Создать цветную бомбу");
                 //совпадает ли текущая точка?
-                if(currentDot != null)
+                if (currentDot != null && currentDot.isMatched && currentDot.tag == typeOfMatch.color)
                 {
-                    if(currentDot.isMatched)
+
+                    currentDot.isMatched = false;
+                    currentDot.MakeColorBomb();
+                }
+                else
+                {
+                    if (currentDot.otherDot != null)
                     {
-                        if (!currentDot.isColorBomb)
+                        Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
+                        if (otherDot.isMatched && otherDot.tag == typeOfMatch.color)
                         {
-                            currentDot.isMatched = false;
-                            currentDot.MakeColorBomb();
-                        }
-                    }
-                    else
-                    {
-                        if(currentDot.otherDot != null)
-                        {
-                            Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
-                            if (otherDot.isMatched)
-                            {
-                                if (!otherDot.isColorBomb)
-                                {
-                                    otherDot.isMatched = false;
-                                    otherDot.MakeColorBomb();
-                                }
-                            }
+
+                            otherDot.isMatched = false;
+                            otherDot.MakeColorBomb();
+
                         }
                     }
                 }
+                
+
             }
-            else
+
+            else if (typeOfMatch.type == 2)
             {
                 //создать соседнюю бомбу
                 //Debug.Log("Создать соседнюю бомбу");
                 //совпадает ли текущая точка?
-                if (currentDot != null)
+                if (currentDot != null && currentDot.isMatched && currentDot.tag == typeOfMatch.color)
                 {
-                    if (currentDot.isMatched)
-                    {
-                        if (!currentDot.isAdjacentBomb)
+
+                    currentDot.isMatched = false;
+                    currentDot.MakeAdjacentBomb();
+
+                }
+                else if (currentDot.otherDot != null)
+                {
+
+                        Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
+                        if (otherDot.isMatched && otherDot.tag == typeOfMatch.color)
                         {
-                            currentDot.isMatched = false;
-                            currentDot.MakeAdjacentBomb();
+                                otherDot.isMatched = false;
+                                otherDot.MakeAdjacentBomb();
+                            
                         }
-                    }
-                    else
-                    {
-                        if (currentDot.otherDot != null)
-                        {
-                            Dot otherDot = currentDot.otherDot.GetComponent<Dot>();
-                            if (otherDot.isMatched)
-                            {
-                                if (!otherDot.isAdjacentBomb)
-                                {
-                                    otherDot.isMatched = false;
-                                    otherDot.MakeAdjacentBomb();
-                                }
-                            }
-                        }
-                    }
+                    
+                    
                 }
             }
+            else if (typeOfMatch.type == 3)
+            {
+                findMatches.CheckBombs(typeOfMatch);
+            }
         }
+        
     }
 
     private void DestroyMatchesAt(int column, int row)
     {
         if (allDots[column, row].GetComponent<Dot>().isMatched)
         {
-            //сколько элементов находится в списке совпадающих из findmatches?
-            if (findMatches.currentMatches.Count >= 4)
-            {
-                CheckToMakeBombs();
-            }
+
 
             //нужно ли разбивать плитку
             if (breakableTiles[column, row] != null)
@@ -350,6 +388,12 @@ public class Board : MonoBehaviour
 
     public void DestroyMatches()
     {
+        //сколько элементов находится в списке совпадающих из findmatches?
+        if (findMatches.currentMatches.Count >= 4)
+        {
+            CheckToMakeBombs();
+        }
+        findMatches.currentMatches.Clear();
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
@@ -360,7 +404,7 @@ public class Board : MonoBehaviour
                 }
             }
         }
-        findMatches.currentMatches.Clear();
+        Debug.Log("Проверка");
         StartCoroutine(DecreaseRowCo2());
     }
 
@@ -453,6 +497,7 @@ public class Board : MonoBehaviour
 
     private bool MatchesOnBoard()
     {
+        findMatches.FindAllMatches();
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
@@ -471,16 +516,17 @@ public class Board : MonoBehaviour
 
     private IEnumerator FillBoardCo()
     {
+
+        yield return new WaitForSeconds(refillDelay);
         RefillBoard();
         yield return new WaitForSeconds(refillDelay);
-
         while (MatchesOnBoard())
         {
             streakValue++;
             DestroyMatches();
-            yield return new WaitForSeconds(2 * refillDelay);
+            yield break;
+            //yield return new WaitForSeconds(2 * refillDelay);
         }
-        findMatches.currentMatches.Clear();
         currentDot = null;
 
         if (IsDeadlocked())
