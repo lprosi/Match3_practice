@@ -28,9 +28,26 @@ public class LevelSelectManager : MonoBehaviour
                 }
             }
         }
-        page = (int)Mathf.Floor(currentLevel / 2);
-        currentPanel = panels[page];
-        panels[page].SetActive(true);
+        if (currentLevel <= 9)
+        {   
+            page = 0;
+            currentPanel = panels[page];
+            panels[page].SetActive(true);
+        }
+        else if (currentLevel <= 18)
+        {
+            page = 1;
+            currentPanel = panels[page];
+            panels[page].SetActive(true);
+        }
+        else
+        {
+            page = 0;
+            panels[0].SetActive(true);
+        }
+        //page = (int)Mathf.Floor(currentLevel / 2);
+        //currentPanel = panels[page];
+        //panels[page].SetActive(true);
     }
 
     // Update is called once per frame

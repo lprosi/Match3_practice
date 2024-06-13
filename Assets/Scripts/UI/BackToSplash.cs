@@ -12,8 +12,15 @@ public class BackToSplash : MonoBehaviour
     {
         if(gameData != null)
         {
-            gameData.saveData.isActive[board.level + 1] = true;
-            gameData.Save();
+            if (board.level + 1 < 18)
+            {
+                gameData.saveData.isActive[board.level + 1] = true;
+                gameData.Save();
+            }
+            else
+            {
+                gameData.Save();
+            }
         }
         SceneManager.LoadScene(sceneToLoad);
     }
