@@ -12,9 +12,11 @@ public class PauseManager : MonoBehaviour
     public Image soundButton;
     public Sprite musicOnSprite;
     public Sprite musicOffSprite;
+    private SoundManager sound;
     // Start is called before the first frame update
     void Start()
     {
+        sound = FindObjectOfType<SoundManager>();
         if (PlayerPrefs.HasKey("Sound"))
         {
             if (PlayerPrefs.GetInt("Sound") == 0)
@@ -60,18 +62,20 @@ public class PauseManager : MonoBehaviour
             {
                 soundButton.sprite = musicOnSprite;
                 PlayerPrefs.SetInt("Sound", 1);
+                sound.AdjustVolume();
             }
             else
             {
                 soundButton.sprite = musicOffSprite;
                 PlayerPrefs.SetInt("Sound", 0);
+                sound.AdjustVolume();
             }
         }
         else
         {
             soundButton.sprite = musicOffSprite;
             PlayerPrefs.SetInt("Sound", 1);
-
+            sound.AdjustVolume();
         }
     }
 

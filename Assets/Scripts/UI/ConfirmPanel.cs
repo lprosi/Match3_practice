@@ -21,8 +21,10 @@ public class ConfirmPanel : MonoBehaviour
     // Start is called before the first frame update
     void OnEnable()
     {
+
         gameData = FindObjectOfType<GameData>();
         LoadData();
+        DisableStars();
         ActivateStars();
         SetText();
     }
@@ -42,9 +44,15 @@ public class ConfirmPanel : MonoBehaviour
         starText.text = "" + starsActive + "/3";
     }
 
+    void DisableStars()
+    {
+        for (int i = 0; i < stars.Length; i++)
+        {
+            stars[i].enabled = false;
+        }
+    }
     void ActivateStars()
     {
-        
         for (int i = 0; i < starsActive; i++)
         {
             stars[i].enabled = true;
